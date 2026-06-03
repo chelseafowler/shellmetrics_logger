@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Oyster Field Logger</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -40,25 +39,19 @@
   .btn:active { background: #f0ede6; }
   .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
   .btn-primary:active { background: #333; }
-  .btn-danger { border-color: #e24b4a; color: #e24b4a; margin-top: 4px; }
+  .btn-danger { border-color: #e24b4a; color: #e24b4a; }
+  .btn-warn { border-color: #b87d00; color: #b87d00; }
   .status-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; letter-spacing: 0.04em; }
   .badge-alive { background: #e6f4d7; color: #2d6a0a; }
   .badge-dead { background: #fde8e8; color: #a32d2d; }
   .badge-info { background: #e8f0fe; color: #1a56c4; }
+  .badge-site { background: #f0e8fe; color: #5b21b6; }
+  .badge-stage { background: #fef3e8; color: #92400e; }
   .counter-row { display: flex; align-items: center; justify-content: space-between; }
   .counter-big { font-size: 40px; font-weight: 500; line-height: 1; }
   .counter-of { font-size: 13px; color: #888; margin-top: 4px; }
   .progress-bar { width: 100%; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; margin-top: 14px; }
   .progress-fill { height: 100%; background: #1a1a1a; border-radius: 3px; transition: width 0.3s; }
-  .qr-container { position: relative; width: 100%; aspect-ratio: 1; background: #000; border-radius: 14px; overflow: hidden; }
-  #qr-video { width: 100%; height: 100%; object-fit: cover; }
-  #qr-canvas { display: none; }
-  .qr-overlay {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 58%; aspect-ratio: 1;
-    border: 2px solid rgba(255,255,255,0.75); border-radius: 12px; pointer-events: none;
-  }
-  .scan-hint { font-size: 13px; color: #888; text-align: center; }
   .photo-preview { width: 100%; border-radius: 10px; aspect-ratio: 4/3; object-fit: cover; background: #f0ede6; display: none; }
   .photo-placeholder {
     width: 100%; border-radius: 10px; aspect-ratio: 4/3;
@@ -69,24 +62,32 @@
   #photo-input { display: none; }
   .divider { border: none; border-top: 1px solid #f0ede6; }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
   .log-entry { font-size: 12px; color: #666; padding: 7px 0; border-bottom: 1px solid #f0ede6; display: flex; justify-content: space-between; align-items: center; }
   .log-entry:last-child { border-bottom: none; }
   .log-scroll { max-height: 200px; overflow-y: auto; }
-  .skip-link { font-size: 13px; color: #888; text-align: center; cursor: pointer; text-decoration: underline; margin-top: -8px; }
   .error-msg { font-size: 13px; color: #a32d2d; padding: 9px 13px; background: #fde8e8; border-radius: 10px; }
   .success-msg { font-size: 13px; color: #2d6a0a; padding: 9px 13px; background: #e6f4d7; border-radius: 10px; }
   #upload-status { font-size: 13px; color: #666; text-align: center; min-height: 20px; }
   .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .meta-row { display: flex; gap: 8px; align-items: center; }
+  .context-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg-group { display: flex; gap: 0; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+  .seg-btn {
+    flex: 1; padding: 11px 8px; font-size: 15px; font-weight: 500;
+    border: none; border-right: 1px solid #ddd;
+    background: #fafaf8; color: #666; cursor: pointer; font-family: inherit;
+    transition: background 0.1s, color 0.1s;
+  }
+  .seg-btn:last-child { border-right: none; }
+  .seg-btn.selected { background: #1a1a1a; color: #fff; }
   .google-btn {
     display: flex; align-items: center; justify-content: center; gap: 12px;
     width: 100%; padding: 14px; font-size: 16px; font-weight: 500;
     border: 1px solid #ddd; border-radius: 12px; background: #fff;
     color: #1a1a1a; cursor: pointer; font-family: inherit;
   }
-  .google-btn:active { background: #f5f5f5; }
-  .google-logo { width: 20px; height: 20px; }
+  .section-gap { display: flex; flex-direction: column; gap: 14px; }
 </style>
 </head>
 <body>
@@ -97,13 +98,13 @@
     <span class="app-title">UMCES · Oyster Lab</span>
     <span class="app-sub">Field Image Logger</span>
   </div>
-  <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+  <div class="card section-gap">
     <div>
       <div class="field-label">Connect to Google Drive</div>
       <p style="font-size:14px; color:#666; line-height:1.6; margin-top:4px;">Photos and index.csv will be saved to your <strong>Oysters/</strong> folder on Drive. Sign in once per device.</p>
     </div>
     <button class="google-btn" onclick="handleGoogleSignIn()">
-      <svg class="google-logo" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.6 33.6 30 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 6 1.1 8.1 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 6 1.1 8.1 3l6-6C34.6 5.1 29.6 3 24 3 16.3 3 9.7 7.9 6.3 14.7z"/><path fill="#FBBC05" d="M24 45c5.9 0 10.9-2 14.5-5.4l-6.7-5.5C29.9 35.9 27.1 37 24 37c-5.9 0-11-4-12.7-9.5l-7 5.4C7.7 40.9 15.3 45 24 45z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-0.8 2.3-2.3 4.3-4.2 5.6l6.7 5.5C42 36.5 45 30.7 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.6 33.6 30 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 6 1.1 8.1 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 6 1.1 8.1 3l6-6C34.6 5.1 29.6 3 24 3 16.3 3 9.7 7.9 6.3 14.7z"/><path fill="#FBBC05" d="M24 45c5.9 0 10.9-2 14.5-5.4l-6.7-5.5C29.9 35.9 27.1 37 24 37c-5.9 0-11-4-12.7-9.5l-7 5.4C7.7 40.9 15.3 45 24 45z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-0.8 2.3-2.3 4.3-4.2 5.6l6.7 5.5C42 36.5 45 30.7 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
       Sign in with Google
     </button>
     <div id="auth-error" style="display:none;" class="error-msg"></div>
@@ -113,41 +114,21 @@
   </div>
 </div>
 
-<!-- SCREEN 2: QR SCAN -->
-<div class="screen" id="screen-qr">
+<!-- SCREEN 2: SITE + STAGE SELECTION -->
+<div class="screen" id="screen-setup">
   <div class="app-header">
-    <span class="app-title">Step 1 of 2</span>
-    <span class="app-sub">Scan session QR code</span>
+    <span class="app-title">Session setup</span>
+    <span class="app-sub">Site &amp; stage</span>
   </div>
-  <div class="qr-container">
-    <video id="qr-video" playsinline autoplay muted></video>
-    <canvas id="qr-canvas"></canvas>
-    <div class="qr-overlay"></div>
-  </div>
-  <p class="scan-hint">Point camera at QR code — folder name will be detected automatically.</p>
-  <p class="skip-link" onclick="showManualEntry()">Type folder name instead</p>
-  <div id="manual-entry" style="display:none; flex-direction:column; gap:12px;">
+  <div class="card section-gap">
     <div>
-      <div class="field-label">Folder name</div>
-      <input type="text" id="manual-folder" placeholder="e.g. HPL25_Sp_2_2N" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <div class="field-label">Site</div>
+      <div class="seg-group">
+        <button class="seg-btn" onclick="selectSite('HPL', this)">HPL</button>
+        <button class="seg-btn" onclick="selectSite('MID', this)">MID</button>
+        <button class="seg-btn" onclick="selectSite('LOW', this)">LOW</button>
+      </div>
     </div>
-    <button class="btn btn-primary" onclick="confirmFolder()">Continue</button>
-  </div>
-  <div id="qr-error" style="display:none;" class="error-msg"></div>
-</div>
-
-<!-- SCREEN 3: STAGE SELECT -->
-<div class="screen" id="screen-stage">
-  <div class="app-header">
-    <span class="app-title">Step 2 of 2</span>
-    <span class="app-sub">Session setup</span>
-  </div>
-  <div class="card" style="display:flex; flex-direction:column; gap:18px;">
-    <div>
-      <div class="field-label">Folder</div>
-      <div id="confirm-folder" class="status-badge badge-info" style="font-size:14px; padding:7px 13px; margin-top:2px;"></div>
-    </div>
-    <hr class="divider">
     <div>
       <div class="field-label">Stage</div>
       <select id="stage-select">
@@ -160,15 +141,52 @@
         <option value="visit_5">visit_5</option>
       </select>
     </div>
-    <button class="btn btn-primary" onclick="startSession()">Start session</button>
-    <div id="stage-error" style="display:none;" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="confirmSetup()">Continue to treatments</button>
+    <div id="setup-error" style="display:none;" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- SCREEN 3: TREATMENT SELECTION -->
+<div class="screen" id="screen-treatment">
+  <div class="app-header">
+    <span class="app-title" id="treat-session-label"></span>
+    <span class="app-sub">New treatment</span>
+  </div>
+  <div class="card section-gap">
+    <div class="context-bar" id="treat-context-bar"></div>
+    <hr class="divider">
+    <div>
+      <div class="field-label">Treatment</div>
+      <div class="seg-group">
+        <button class="seg-btn" onclick="selectTreatment('Sp', this)">Sp (primed)</button>
+        <button class="seg-btn" onclick="selectTreatment('Snp', this)">Snp (no prime)</button>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">Ploidy</div>
+      <div class="seg-group">
+        <button class="seg-btn" onclick="selectPloidy('2N', this)">2N</button>
+        <button class="seg-btn" onclick="selectPloidy('3N', this)">3N</button>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">Replicate</div>
+      <div class="seg-group">
+        <button class="seg-btn" onclick="selectReplicate('1', this)">1</button>
+        <button class="seg-btn" onclick="selectReplicate('2', this)">2</button>
+        <button class="seg-btn" onclick="selectReplicate('3', this)">3</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startTreatment()">Start photographing</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+    <div id="treatment-error" style="display:none;" class="error-msg"></div>
   </div>
 </div>
 
 <!-- SCREEN 4: PHOTO LOOP -->
 <div class="screen" id="screen-loop">
   <div class="app-header">
-    <span class="app-title" id="loop-session-label"></span>
+    <span class="app-title" id="loop-label"></span>
     <span class="app-sub">Photograph oysters</span>
   </div>
 
@@ -178,16 +196,14 @@
         <div class="counter-big" id="loop-count">1</div>
         <div class="counter-of">of 50 max</div>
       </div>
-      <div class="meta-row">
-        <span class="status-badge badge-info" id="loop-stage-badge"></span>
-      </div>
+      <div class="context-bar" id="loop-context-bar"></div>
     </div>
     <div class="progress-bar">
       <div class="progress-fill" id="loop-progress" style="width:2%;"></div>
     </div>
   </div>
 
-  <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+  <div class="card section-gap">
     <div id="photo-placeholder" class="photo-placeholder">No photo taken yet</div>
     <img id="photo-preview" class="photo-preview" alt="oyster photo">
     <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(event)">
@@ -224,28 +240,42 @@
     <div id="upload-status"></div>
 
     <button class="btn btn-primary" onclick="saveEntry()">Save &amp; next oyster</button>
-    <button class="btn btn-danger" onclick="endSession()">End session</button>
+    <button class="btn btn-warn" onclick="finishTreatment()">Done with this treatment</button>
   </div>
 
   <div class="card" id="log-card" style="display:none;">
-    <div class="field-label" style="margin-bottom:12px;">Saved this session</div>
+    <div class="field-label" style="margin-bottom:12px;">Saved this treatment</div>
     <div class="log-scroll" id="log-list"></div>
   </div>
 </div>
 
-<!-- SCREEN 5: DONE -->
+<!-- SCREEN 5: BETWEEN TREATMENTS -->
+<div class="screen" id="screen-between">
+  <div class="app-header">
+    <span class="app-title" id="between-label"></span>
+    <span class="app-sub">Treatment complete</span>
+  </div>
+  <div class="card section-gap">
+    <div class="success-msg" id="between-summary"></div>
+    <p style="font-size:14px; color:#666; line-height:1.6;">What would you like to do next?</p>
+    <button class="btn btn-primary" onclick="nextTreatment()">Start next treatment</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+  </div>
+</div>
+
+<!-- SCREEN 6: SESSION DONE -->
 <div class="screen" id="screen-done">
   <div class="app-header">
     <span class="app-title">Session complete</span>
     <span class="app-sub">All data saved to Drive</span>
   </div>
-  <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+  <div class="card section-gap">
     <div class="success-msg" id="done-summary"></div>
     <div>
-      <div class="field-label">Folder</div>
-      <div id="done-folder" class="status-badge badge-info" style="font-size:14px; padding:7px 13px;"></div>
+      <div class="field-label">Location in Drive</div>
+      <p style="font-size:13px; color:#666; margin-top:4px;" id="done-path"></p>
     </div>
-    <a id="drive-link" href="#" target="_blank" class="btn" style="text-align:center; text-decoration:none; display:block;">Open folder in Google Drive</a>
+    <a id="drive-link" href="#" target="_blank" class="btn" style="text-align:center; text-decoration:none; display:block;">Open in Google Drive</a>
     <button class="btn btn-primary" onclick="newSession()">Start new session</button>
   </div>
 </div>
@@ -258,17 +288,26 @@
   const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
   let accessToken = null;
-  let folderName = '';
+  let tokenClient = null;
+
+  // session-level (fixed for whole session)
+  let siteName = '';
   let stageName = '';
-  let sessionFolderId = '';
+  let siteFolderId = '';
+  let stageFolderId = '';
   let oystersFolderId = '';
+
+  // treatment-level (reset per treatment)
+  let treatment = '';
+  let ploidy = '';
+  let replicate = '';
+  let treatmentFolderId = '';
   let csvFileId = '';
   let csvRows = [];
   let loopCount = 0;
   let currentPhotoBlob = null;
-  let qrStream = null;
-  let qrInterval = null;
-  let tokenClient = null;
+  let totalOystersSession = 0;
+  let treatmentsCompleted = 0;
 
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -296,95 +335,188 @@
       callback: (response) => {
         if (response.error) { showError('auth-error', 'Sign-in failed: ' + response.error); return; }
         accessToken = response.access_token;
-        startQRScan();
+        showScreen('screen-setup');
       }
     });
     tokenClient.requestAccessToken();
   }
 
-  // ── QR SCAN ──────────────────────────────────────────────────────────────
-  function startQRScan() {
-    showScreen('screen-qr');
-    document.getElementById('qr-error').style.display = 'none';
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        qrStream = stream;
-        const video = document.getElementById('qr-video');
-        video.srcObject = stream;
-        video.play();
-        qrInterval = setInterval(scanQRFrame, 250);
-      })
-      .catch(() => {
-        showManualEntry();
-        showError('qr-error', 'Camera not accessible — please type the folder name below.');
-      });
+  // ── SITE + STAGE SETUP ────────────────────────────────────────────────────
+  function selectSite(val, btn) {
+    siteName = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
   }
 
-  function scanQRFrame() {
-    const video = document.getElementById('qr-video');
-    const canvas = document.getElementById('qr-canvas');
-    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
-    if (code && code.data.trim()) {
-      stopQR();
-      folderName = code.data.trim();
-      proceedToStage();
+  function confirmSetup() {
+    stageName = document.getElementById('stage-select').value;
+    if (!siteName) { showError('setup-error', 'Please select a site.'); return; }
+    if (!stageName) { showError('setup-error', 'Please select a stage.'); return; }
+    document.getElementById('setup-error').style.display = 'none';
+    totalOystersSession = 0;
+    treatmentsCompleted = 0;
+    initSessionFolders();
+  }
+
+  async function initSessionFolders() {
+    showScreen('screen-treatment');
+    document.getElementById('treat-session-label').textContent = siteName + ' · ' + stageName;
+    renderContextBar('treat-context-bar', [
+      { label: siteName, cls: 'badge-site' },
+      { label: stageName, cls: 'badge-stage' }
+    ]);
+    setUploadStatus('spinner', 'Setting up Drive folders…');
+    try {
+      oystersFolderId = await getOrCreateFolder('Oysters', 'root');
+      siteFolderId = await getOrCreateFolder(siteName, oystersFolderId);
+      stageFolderId = await getOrCreateFolder(stageName, siteFolderId);
+      setUploadStatus('', '');
+    } catch(e) {
+      showError('treatment-error', 'Drive error: ' + e.message);
     }
   }
 
-  function stopQR() {
-    clearInterval(qrInterval);
-    if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  // ── TREATMENT SELECTION ───────────────────────────────────────────────────
+  function selectTreatment(val, btn) {
+    treatment = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
   }
 
-  function showManualEntry() {
-    document.getElementById('manual-entry').style.display = 'flex';
+  function selectPloidy(val, btn) {
+    ploidy = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
   }
 
-  function confirmFolder() {
-    const val = document.getElementById('manual-folder').value.trim();
-    if (!val) { showError('qr-error', 'Please enter a folder name.'); return; }
-    stopQR();
-    folderName = val;
-    proceedToStage();
+  function selectReplicate(val, btn) {
+    replicate = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
   }
 
-  function proceedToStage() {
-    document.getElementById('confirm-folder').textContent = folderName;
-    showScreen('screen-stage');
-  }
+  async function startTreatment() {
+    if (!treatment) { showError('treatment-error', 'Please select a treatment.'); return; }
+    if (!ploidy) { showError('treatment-error', 'Please select a ploidy.'); return; }
+    if (!replicate) { showError('treatment-error', 'Please select a replicate.'); return; }
+    if (!stageFolderId) { showError('treatment-error', 'Drive folders still loading — wait a moment.'); return; }
+    document.getElementById('treatment-error').style.display = 'none';
 
-  // ── SESSION START ─────────────────────────────────────────────────────────
-  function startSession() {
-    stageName = document.getElementById('stage-select').value;
-    if (!stageName) { showError('stage-error', 'Please select a stage.'); return; }
-    document.getElementById('stage-error').style.display = 'none';
-    loopCount = 0; csvRows = []; currentPhotoBlob = null;
-    document.getElementById('loop-session-label').textContent = folderName;
-    document.getElementById('loop-stage-badge').textContent = stageName;
+    loopCount = 0;
+    currentPhotoBlob = null;
+    csvRows = [];
+    document.getElementById('log-list').innerHTML = '';
+    document.getElementById('log-card').style.display = 'none';
+
+    const treatmentFolderName = treatment + '_' + ploidy + '_' + replicate;
+    document.getElementById('loop-label').textContent = siteName + ' · ' + stageName + ' · ' + treatmentFolderName;
+    renderContextBar('loop-context-bar', [
+      { label: siteName, cls: 'badge-site' },
+      { label: stageName, cls: 'badge-stage' },
+      { label: treatmentFolderName, cls: 'badge-info' }
+    ]);
     updateLoopUI();
     showScreen('screen-loop');
-    initDriveFolder();
-  }
 
-  // ── DRIVE SETUP ───────────────────────────────────────────────────────────
-  async function initDriveFolder() {
-    setUploadStatus('spinner', 'Setting up Drive folder…');
+    setUploadStatus('spinner', 'Setting up treatment folder…');
     try {
-      oystersFolderId = await getOrCreateFolder('Oysters', 'root');
-      sessionFolderId = await getOrCreateFolder(folderName, oystersFolderId);
-      csvFileId = await getOrCreateCSV(sessionFolderId);
+      treatmentFolderId = await getOrCreateFolder(treatmentFolderName, stageFolderId);
+      csvFileId = await getOrCreateCSV(treatmentFolderId);
       setUploadStatus('', '');
     } catch(e) {
       setUploadStatus('error', 'Drive error: ' + e.message);
     }
   }
 
+  // ── PHOTO LOOP ────────────────────────────────────────────────────────────
+  function handlePhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    currentPhotoBlob = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('photo-preview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('photo-placeholder').style.display = 'none';
+      document.getElementById('photo-btn-label').textContent = 'Retake photo';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveEntry() {
+    const tagId = document.getElementById('tag-id').value.trim();
+    const status = document.getElementById('status-select').value;
+    const observations = document.getElementById('observations').value.trim().replace(/,/g, ';');
+
+    if (!currentPhotoBlob) { setUploadStatus('error', 'Please take a photo first.'); return; }
+    if (!tagId) { setUploadStatus('error', 'Please enter a Tag ID.'); return; }
+    if (!status) { setUploadStatus('error', 'Please select alive or dead.'); return; }
+    if (!treatmentFolderId) { setUploadStatus('error', 'Drive folder not ready yet — wait a moment.'); return; }
+
+    setUploadStatus('spinner', 'Saving to Drive…');
+    try {
+      const dateStr = new Date().toISOString().split('T')[0];
+      await uploadImage(currentPhotoBlob, tagId + '.jpg', treatmentFolderId);
+      // order: date, site, stage, treatment, ploidy, replicate, tag_id, status, observations
+      const row = [dateStr, siteName, stageName, treatment, ploidy, replicate, tagId, status, observations].join(',');
+      csvRows.push(row);
+      await updateCSV();
+      addToLog(tagId, status);
+      loopCount++;
+      totalOystersSession++;
+      if (loopCount >= 50) { finishTreatment(); return; }
+      updateLoopUI();
+      resetEntryFields();
+      setUploadStatus('success', 'Saved: ' + tagId + '.jpg');
+      setTimeout(() => setUploadStatus('', ''), 2500);
+    } catch(e) {
+      setUploadStatus('error', 'Save failed: ' + e.message);
+    }
+  }
+
+  function finishTreatment() {
+    treatmentsCompleted++;
+    const treatmentFolderName = treatment + '_' + ploidy + '_' + replicate;
+    document.getElementById('between-label').textContent = siteName + ' · ' + stageName;
+    document.getElementById('between-summary').textContent =
+      loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for ' + treatmentFolderName + '.';
+    showScreen('screen-between');
+  }
+
+  function nextTreatment() {
+    // reset treatment selections
+    treatment = ''; ploidy = ''; replicate = '';
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    showScreen('screen-treatment');
+  }
+
+  function endFullSession() {
+    const treatmentFolderName = treatment && ploidy && replicate ? treatment + '_' + ploidy + '_' + replicate : '—';
+    document.getElementById('done-summary').textContent =
+      totalOystersSession + ' oyster' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
+      treatmentsCompleted + ' treatment' + (treatmentsCompleted !== 1 ? 's' : '') + '.';
+    document.getElementById('done-path').textContent = 'Oysters / ' + siteName + ' / ' + stageName;
+    document.getElementById('drive-link').href = stageFolderId
+      ? 'https://drive.google.com/drive/folders/' + stageFolderId
+      : 'https://drive.google.com/drive/';
+    showScreen('screen-done');
+  }
+
+  function newSession() {
+    siteName = ''; stageName = ''; treatment = ''; ploidy = ''; replicate = '';
+    siteFolderId = ''; stageFolderId = ''; treatmentFolderId = ''; csvFileId = '';
+    csvRows = []; loopCount = 0; totalOystersSession = 0; treatmentsCompleted = 0;
+    currentPhotoBlob = null;
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('stage-select').value = '';
+    document.getElementById('log-list').innerHTML = '';
+    document.getElementById('log-card').style.display = 'none';
+    resetEntryFields();
+    showScreen('screen-setup');
+  }
+
+  // ── DRIVE HELPERS ─────────────────────────────────────────────────────────
   async function driveRequest(url, method, body, headers={}) {
     const res = await fetch(url, {
       method,
@@ -415,10 +547,10 @@
       const content = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: { 'Authorization': 'Bearer ' + accessToken }
       }).then(r => r.text());
-      csvRows = content.trim() ? content.trim().split('\n') : ['date,folder,tag_id,status,stage,observations'];
+      csvRows = content.trim() ? content.trim().split('\n') : ['date,site,stage,treatment,ploidy,replicate,tag_id,status,observations'];
       return fileId;
     }
-    const header = 'date,folder,tag_id,status,stage,observations\n';
+    const header = 'date,site,stage,treatment,ploidy,replicate,tag_id,status,observations\n';
     const blob = new Blob([header], { type: 'text/csv' });
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify({ name: 'index.csv', parents: [parentId] })], { type: 'application/json' }));
@@ -427,53 +559,8 @@
       method: 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form
     });
     const data = await r.json();
-    csvRows = ['date,folder,tag_id,status,stage,observations'];
+    csvRows = ['date,site,stage,treatment,ploidy,replicate,tag_id,status,observations'];
     return data.id;
-  }
-
-  // ── PHOTO LOOP ────────────────────────────────────────────────────────────
-  function handlePhoto(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    currentPhotoBlob = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const preview = document.getElementById('photo-preview');
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-      document.getElementById('photo-placeholder').style.display = 'none';
-      document.getElementById('photo-btn-label').textContent = 'Retake photo';
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function saveEntry() {
-    const tagId = document.getElementById('tag-id').value.trim();
-    const status = document.getElementById('status-select').value;
-    const observations = document.getElementById('observations').value.trim().replace(/,/g, ';');
-
-    if (!currentPhotoBlob) { setUploadStatus('error', 'Please take a photo first.'); return; }
-    if (!tagId) { setUploadStatus('error', 'Please enter a Tag ID.'); return; }
-    if (!status) { setUploadStatus('error', 'Please select alive or dead.'); return; }
-    if (!sessionFolderId) { setUploadStatus('error', 'Drive folder not ready yet — wait a moment and try again.'); return; }
-
-    setUploadStatus('spinner', 'Saving to Drive…');
-    try {
-      const dateStr = new Date().toISOString().split('T')[0];
-      await uploadImage(currentPhotoBlob, tagId + '.jpg', sessionFolderId);
-      const row = [dateStr, folderName, tagId, status, stageName, observations].join(',');
-      csvRows.push(row);
-      await updateCSV();
-      addToLog(tagId, status);
-      loopCount++;
-      if (loopCount >= 50) { endSession(); return; }
-      updateLoopUI();
-      resetEntryFields();
-      setUploadStatus('success', 'Saved: ' + tagId + '.jpg');
-      setTimeout(() => setUploadStatus('', ''), 2500);
-    } catch(e) {
-      setUploadStatus('error', 'Save failed: ' + e.message);
-    }
   }
 
   async function uploadImage(blob, filename, parentId) {
@@ -495,9 +582,10 @@
     if (!res.ok) { const e = await res.json(); throw new Error(e.error.message); }
   }
 
+  // ── UI HELPERS ────────────────────────────────────────────────────────────
   function updateLoopUI() {
     document.getElementById('loop-count').textContent = loopCount + 1;
-    document.getElementById('loop-progress').style.width = Math.max(2, ((loopCount) / 50) * 100) + '%';
+    document.getElementById('loop-progress').style.width = Math.max(2, (loopCount / 50) * 100) + '%';
   }
 
   function resetEntryFields() {
@@ -522,32 +610,10 @@
     logList.insertBefore(entry, logList.firstChild);
   }
 
-  function endSession() {
-    const count = loopCount;
-    document.getElementById('done-summary').textContent = count + ' oyster' + (count !== 1 ? 's' : '') + ' logged in ' + folderName + ' / ' + stageName;
-    document.getElementById('done-folder').textContent = folderName;
-    document.getElementById('drive-link').href = `https://drive.google.com/drive/folders/${sessionFolderId}`;
-    showScreen('screen-done');
+  function renderContextBar(containerId, items) {
+    const bar = document.getElementById(containerId);
+    bar.innerHTML = items.map(i => `<span class="status-badge ${i.cls}">${i.label}</span>`).join('');
   }
-
-  function newSession() {
-    folderName = ''; stageName = ''; sessionFolderId = ''; csvFileId = '';
-    csvRows = []; loopCount = 0; currentPhotoBlob = null;
-    document.getElementById('manual-folder').value = '';
-    document.getElementById('manual-entry').style.display = 'none';
-    document.getElementById('stage-select').value = '';
-    document.getElementById('log-list').innerHTML = '';
-    document.getElementById('log-card').style.display = 'none';
-    resetEntryFields();
-    startQRScan();
-  }
-
-  document.getElementById('status-select').addEventListener('change', function() {
-    const badge = document.getElementById('status-preview');
-    if (this.value === 'alive') { badge.textContent = 'alive'; badge.className = 'status-badge badge-alive'; }
-    else if (this.value === 'dead') { badge.textContent = 'dead'; badge.className = 'status-badge badge-dead'; }
-    else { badge.textContent = ''; badge.className = 'status-badge'; }
-  });
 
   function setUploadStatus(type, msg) {
     const el = document.getElementById('upload-status');
@@ -562,6 +628,13 @@
     const el = document.getElementById(id);
     el.textContent = msg; el.style.display = 'block';
   }
+
+  document.getElementById('status-select').addEventListener('change', function() {
+    const badge = document.getElementById('status-preview');
+    if (this.value === 'alive') { badge.textContent = 'alive'; badge.className = 'status-badge badge-alive'; }
+    else if (this.value === 'dead') { badge.textContent = 'dead'; badge.className = 'status-badge badge-dead'; }
+    else { badge.textContent = ''; badge.className = 'status-badge'; }
+  });
 </script>
 </body>
 </html>

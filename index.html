@@ -3,6 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  /* Force landscape on the photo loop screen only */
+  #screen-loop {
+    max-width: 100% !important;
+  }
+  @media (orientation: landscape) {
+    #screen-loop {
+      flex-direction: row !important;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      padding: 12px 16px 20px;
+      gap: 12px;
+    }
+    #screen-loop .app-header {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+    }
+    #screen-loop .app-header .app-sub { font-size: 16px; }
+    #loop-counter-card {
+      width: calc(38% - 6px);
+    }
+    #loop-entry-card {
+      width: calc(62% - 6px);
+    }
+    #log-card {
+      width: 100%;
+    }
+    .photo-placeholder, #photo-preview {
+      aspect-ratio: 16/9 !important;
+    }
+    textarea#observations {
+      min-height: 52px !important;
+    }
+  }
+  @media (orientation: portrait) {
+    #screen-loop {
+      max-width: 480px;
+    }
+  }
+</style>
 <title>Oyster Field Logger</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,7 +233,7 @@
     <span class="app-sub">Photograph oysters</span>
   </div>
 
-  <div class="card">
+  <div class="card" id="loop-counter-card">
     <div class="counter-row">
       <div>
         <div class="counter-big" id="loop-count">1</div>
@@ -203,7 +246,7 @@
     </div>
   </div>
 
-  <div class="card section-gap">
+  <div class="card section-gap" id="loop-entry-card">
     <div id="photo-placeholder" class="photo-placeholder">No photo taken yet</div>
     <img id="photo-preview" class="photo-preview" alt="oyster photo">
     <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(event)">
@@ -215,7 +258,7 @@
 
     <div>
       <div class="field-label">Tag ID</div>
-      <input type="text" id="tag-id" placeholder="e.g. T042" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <input type="text" id="tag-id" placeholder="e.g. 042" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false">
     </div>
 
     <div class="row-2">
@@ -440,6 +483,12 @@
       preview.style.display = 'block';
       document.getElementById('photo-placeholder').style.display = 'none';
       document.getElementById('photo-btn-label').textContent = 'Retake photo';
+      // Auto-focus tag ID field after photo taken
+      setTimeout(() => {
+        const tagField = document.getElementById('tag-id');
+        tagField.focus();
+        tagField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     };
     reader.readAsDataURL(file);
   }

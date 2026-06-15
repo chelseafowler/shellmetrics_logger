@@ -84,6 +84,7 @@
   .btn-primary:active { background: #333; }
   .btn-danger { border-color: #e24b4a; color: #e24b4a; }
   .btn-warn { border-color: #b87d00; color: #b87d00; }
+  .btn-sub { font-size: 13px; color: #888; line-height: 1.5; margin-top: 6px; font-weight: 400; text-align: left; text-transform: none; letter-spacing: normal; }
   .status-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; letter-spacing: 0.04em; }
   .badge-alive { background: #e6f4d7; color: #2d6a0a; }
   .badge-dead { background: #fde8e8; color: #a32d2d; }
@@ -157,10 +158,32 @@
   </div>
 </div>
 
-<!-- SCREEN 2: SITE + STAGE SELECTION -->
-<div class="screen" id="screen-setup">
+<!-- SCREEN 2: EXPERIMENT SELECTION -->
+<div class="screen" id="screen-experiment">
   <div class="app-header">
     <span class="app-title">Session setup</span>
+    <span class="app-sub">Choose experiment</span>
+  </div>
+  <div class="card section-gap">
+    <div>
+      <button class="btn btn-primary" onclick="chooseExperiment('field')" style="text-align:left;">Field Study (Site Visits)</button>
+      <div class="btn-sub">Site → stage → treatment/ploidy/replicate, tagged oysters.</div>
+    </div>
+    <div>
+      <button class="btn" onclick="chooseExperiment('baskets')" style="text-align:left;">Previous Experiment Baskets</button>
+      <div class="btn-sub">Group by basket number; each oyster has a tag number + tag color.</div>
+    </div>
+    <div>
+      <button class="btn" onclick="chooseExperiment('hypoxia')" style="text-align:left;">Hypoxia Experiment 2025</button>
+      <div class="btn-sub">Group by treatment ID; oysters are untagged — status &amp; observations only.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: SITE + STAGE SELECTION (Field Study) -->
+<div class="screen" id="screen-setup">
+  <div class="app-header">
+    <span class="app-title">Field Study</span>
     <span class="app-sub">Site &amp; stage</span>
   </div>
   <div class="card section-gap">
@@ -185,11 +208,12 @@
       </select>
     </div>
     <button class="btn btn-primary" onclick="confirmSetup()">Continue to treatments</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
     <div id="setup-error" style="display:none;" class="error-msg"></div>
   </div>
 </div>
 
-<!-- SCREEN 3: TREATMENT SELECTION -->
+<!-- SCREEN 4: TREATMENT SELECTION (Field Study) -->
 <div class="screen" id="screen-treatment">
   <div class="app-header">
     <span class="app-title" id="treat-session-label"></span>
@@ -226,7 +250,41 @@
   </div>
 </div>
 
-<!-- SCREEN 4: PHOTO LOOP -->
+<!-- SCREEN 5: BASKET SETUP (Previous Experiment Baskets) -->
+<div class="screen" id="screen-basket-setup">
+  <div class="app-header">
+    <span class="app-title">Previous Experiment Baskets</span>
+    <span class="app-sub">Basket setup</span>
+  </div>
+  <div class="card section-gap">
+    <div>
+      <div class="field-label">Basket number</div>
+      <input type="text" id="basket-number" placeholder="e.g. 12" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn btn-primary" onclick="startBasket()">Start photographing</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+    <div id="basket-error" style="display:none;" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- SCREEN 6: HYPOXIA TREATMENT SETUP -->
+<div class="screen" id="screen-hypoxia-setup">
+  <div class="app-header">
+    <span class="app-title">Hypoxia Experiment 2025</span>
+    <span class="app-sub">Treatment setup</span>
+  </div>
+  <div class="card section-gap">
+    <div>
+      <div class="field-label">Treatment ID</div>
+      <input type="text" id="hypoxia-treatment-id" placeholder="e.g. T1" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <button class="btn btn-primary" onclick="startHypoxia()">Start photographing</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+    <div id="hypoxia-error" style="display:none;" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- SCREEN 7: PHOTO LOOP -->
 <div class="screen" id="screen-loop">
   <div class="app-header">
     <span class="app-title" id="loop-label"></span>
@@ -256,9 +314,22 @@
 
     <hr class="divider">
 
-    <div>
+    <!-- Field Study: tag ID -->
+    <div id="field-tagid-group">
       <div class="field-label">Tag ID</div>
       <input type="text" id="tag-id" placeholder="e.g. 042" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false">
+    </div>
+
+    <!-- Previous Experiment Baskets: tag number + tag color -->
+    <div id="basket-tag-group" class="row-2">
+      <div>
+        <div class="field-label">Tag Number</div>
+        <input type="text" id="tag-number" placeholder="e.g. 12" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <div class="field-label">Tag Color</div>
+        <input type="text" id="tag-color" placeholder="e.g. blue" autocomplete="off" spellcheck="false">
+      </div>
     </div>
 
     <div class="row-2">
@@ -282,31 +353,31 @@
 
     <div id="upload-status"></div>
 
-    <button class="btn btn-primary" onclick="saveEntry()">Save &amp; next oyster</button>
-    <button class="btn btn-warn" onclick="finishTreatment()">Done with this treatment</button>
+    <button class="btn btn-primary" onclick="saveEntry()"><span id="save-btn-label">Save &amp; next oyster</span></button>
+    <button class="btn btn-warn" id="finish-group-btn" onclick="finishGroup()">Done with this treatment</button>
   </div>
 
   <div class="card" id="log-card" style="display:none;">
-    <div class="field-label" style="margin-bottom:12px;">Saved this treatment</div>
+    <div class="field-label" style="margin-bottom:12px;">Saved this group</div>
     <div class="log-scroll" id="log-list"></div>
   </div>
 </div>
 
-<!-- SCREEN 5: BETWEEN TREATMENTS -->
+<!-- SCREEN 8: BETWEEN GROUPS -->
 <div class="screen" id="screen-between">
   <div class="app-header">
     <span class="app-title" id="between-label"></span>
-    <span class="app-sub">Treatment complete</span>
+    <span class="app-sub">Group complete</span>
   </div>
   <div class="card section-gap">
     <div class="success-msg" id="between-summary"></div>
     <p style="font-size:14px; color:#666; line-height:1.6;">What would you like to do next?</p>
-    <button class="btn btn-primary" onclick="nextTreatment()">Start next treatment</button>
+    <button class="btn btn-primary" id="next-group-btn" onclick="nextGroup()">Start next treatment</button>
     <button class="btn btn-danger" onclick="endFullSession()">End session</button>
   </div>
 </div>
 
-<!-- SCREEN 6: SESSION DONE -->
+<!-- SCREEN 9: SESSION DONE -->
 <div class="screen" id="screen-done">
   <div class="app-header">
     <span class="app-title">Session complete</span>
@@ -333,24 +404,39 @@
   let accessToken = null;
   let tokenClient = null;
 
-  // session-level (fixed for whole session)
+  // experiment type: 'field' | 'baskets' | 'hypoxia'
+  let experimentType = '';
+
+  let oystersFolderId = '';
+  let activeFolderId = ''; // the folder the current photo loop saves into
+
+  // ── Field Study (site visits) ──
   let siteName = '';
   let stageName = '';
   let siteFolderId = '';
   let stageFolderId = '';
-  let oystersFolderId = '';
-
-  // treatment-level (reset per treatment)
   let treatment = '';
   let ploidy = '';
   let replicate = '';
   let treatmentFolderId = '';
+
+  // ── Previous Experiment Baskets ──
+  let basketNumber = '';
+  let basketFolderId = '';
+  let previousExpFolderId = '';
+
+  // ── Hypoxia Experiment 2025 ──
+  let hypoxiaTreatmentId = '';
+  let hypoxiaFolderId = '';
+  let hypoxiaExpFolderId = '';
+
+  // ── Shared loop state ──
   let csvFileId = '';
   let csvRows = [];
   let loopCount = 0;
   let currentPhotoBlob = null;
   let totalOystersSession = 0;
-  let treatmentsCompleted = 0;
+  let groupsCompleted = 0;
 
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -378,13 +464,34 @@
       callback: (response) => {
         if (response.error) { showError('auth-error', 'Sign-in failed: ' + response.error); return; }
         accessToken = response.access_token;
-        showScreen('screen-setup');
+        showScreen('screen-experiment');
       }
     });
     tokenClient.requestAccessToken();
   }
 
-  // ── SITE + STAGE SETUP ────────────────────────────────────────────────────
+  // ── EXPERIMENT SELECTION ──────────────────────────────────────────────────
+  function chooseExperiment(type) {
+    experimentType = type;
+    totalOystersSession = 0;
+    groupsCompleted = 0;
+    if (type === 'field') {
+      showScreen('screen-setup');
+    } else if (type === 'baskets') {
+      showScreen('screen-basket-setup');
+    } else {
+      showScreen('screen-hypoxia-setup');
+    }
+  }
+
+  async function ensureOystersFolder() {
+    if (!oystersFolderId) {
+      oystersFolderId = await getOrCreateFolder('Oysters', 'root');
+    }
+    return oystersFolderId;
+  }
+
+  // ── FIELD STUDY: SITE + STAGE SETUP ──────────────────────────────────────
   function selectSite(val, btn) {
     siteName = val;
     btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
@@ -396,8 +503,6 @@
     if (!siteName) { showError('setup-error', 'Please select a site.'); return; }
     if (!stageName) { showError('setup-error', 'Please select a stage.'); return; }
     document.getElementById('setup-error').style.display = 'none';
-    totalOystersSession = 0;
-    treatmentsCompleted = 0;
     initSessionFolders();
   }
 
@@ -410,7 +515,7 @@
     ]);
     setUploadStatus('spinner', 'Setting up Drive folders…');
     try {
-      oystersFolderId = await getOrCreateFolder('Oysters', 'root');
+      await ensureOystersFolder();
       siteFolderId = await getOrCreateFolder(siteName, oystersFolderId);
       stageFolderId = await getOrCreateFolder(stageName, siteFolderId);
       setUploadStatus('', '');
@@ -419,7 +524,7 @@
     }
   }
 
-  // ── TREATMENT SELECTION ───────────────────────────────────────────────────
+  // ── FIELD STUDY: TREATMENT SELECTION ─────────────────────────────────────
   function selectTreatment(val, btn) {
     treatment = val;
     btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
@@ -445,11 +550,7 @@
     if (!stageFolderId) { showError('treatment-error', 'Drive folders still loading — wait a moment.'); return; }
     document.getElementById('treatment-error').style.display = 'none';
 
-    loopCount = 0;
-    currentPhotoBlob = null;
-    csvRows = [];
-    document.getElementById('log-list').innerHTML = '';
-    document.getElementById('log-card').style.display = 'none';
+    resetLoopState();
 
     const treatmentFolderName = treatment + '_' + ploidy + '_' + replicate;
     document.getElementById('loop-label').textContent = siteName + ' · ' + stageName + ' · ' + treatmentFolderName;
@@ -458,17 +559,103 @@
       { label: stageName, cls: 'badge-stage' },
       { label: treatmentFolderName, cls: 'badge-info' }
     ]);
+    setLoopFieldsVisibility();
+    document.getElementById('save-btn-label').textContent = 'Save & next oyster';
+    document.getElementById('finish-group-btn').textContent = 'Done with this treatment';
+    document.getElementById('log-card').querySelector('.field-label').textContent = 'Saved this treatment';
     updateLoopUI();
     showScreen('screen-loop');
 
     setUploadStatus('spinner', 'Setting up treatment folder…');
     try {
       treatmentFolderId = await getOrCreateFolder(treatmentFolderName, stageFolderId);
-      csvFileId = await getOrCreateCSV(treatmentFolderId);
+      activeFolderId = treatmentFolderId;
+      csvFileId = await getOrCreateCSV(activeFolderId, 'date,site,stage,treatment,ploidy,replicate,tag_id,status,observations');
       setUploadStatus('', '');
     } catch(e) {
       setUploadStatus('error', 'Drive error: ' + e.message);
     }
+  }
+
+  // ── PREVIOUS EXPERIMENT BASKETS ───────────────────────────────────────────
+  async function startBasket() {
+    const val = document.getElementById('basket-number').value.trim();
+    if (!val) { showError('basket-error', 'Please enter a basket number.'); return; }
+    document.getElementById('basket-error').style.display = 'none';
+    basketNumber = val;
+
+    resetLoopState();
+
+    document.getElementById('loop-label').textContent = 'Previous Baskets · Basket ' + basketNumber;
+    renderContextBar('loop-context-bar', [
+      { label: 'Basket ' + basketNumber, cls: 'badge-info' }
+    ]);
+    setLoopFieldsVisibility();
+    document.getElementById('save-btn-label').textContent = 'Save & next oyster';
+    document.getElementById('finish-group-btn').textContent = 'Done with this basket';
+    document.getElementById('log-card').querySelector('.field-label').textContent = 'Saved this basket';
+    updateLoopUI();
+    showScreen('screen-loop');
+
+    setUploadStatus('spinner', 'Setting up Drive folder…');
+    try {
+      await ensureOystersFolder();
+      previousExpFolderId = await getOrCreateFolder('Previous_Experiment_Baskets', oystersFolderId);
+      basketFolderId = await getOrCreateFolder('Basket_' + basketNumber, previousExpFolderId);
+      activeFolderId = basketFolderId;
+      csvFileId = await getOrCreateCSV(activeFolderId, 'date,basket,tag_number,tag_color,status,observations');
+      setUploadStatus('', '');
+    } catch(e) {
+      setUploadStatus('error', 'Drive error: ' + e.message);
+    }
+  }
+
+  // ── HYPOXIA EXPERIMENT 2025 ────────────────────────────────────────────────
+  async function startHypoxia() {
+    const val = document.getElementById('hypoxia-treatment-id').value.trim();
+    if (!val) { showError('hypoxia-error', 'Please enter a treatment ID.'); return; }
+    document.getElementById('hypoxia-error').style.display = 'none';
+    hypoxiaTreatmentId = val;
+
+    resetLoopState();
+
+    document.getElementById('loop-label').textContent = 'Hypoxia 2025 · ' + hypoxiaTreatmentId;
+    renderContextBar('loop-context-bar', [
+      { label: hypoxiaTreatmentId, cls: 'badge-info' }
+    ]);
+    setLoopFieldsVisibility();
+    document.getElementById('save-btn-label').textContent = 'Save & next photo';
+    document.getElementById('finish-group-btn').textContent = 'Done with this treatment';
+    document.getElementById('log-card').querySelector('.field-label').textContent = 'Saved this treatment';
+    updateLoopUI();
+    showScreen('screen-loop');
+
+    setUploadStatus('spinner', 'Setting up Drive folder…');
+    try {
+      await ensureOystersFolder();
+      hypoxiaExpFolderId = await getOrCreateFolder('Hypoxia_2025', oystersFolderId);
+      hypoxiaFolderId = await getOrCreateFolder(hypoxiaTreatmentId, hypoxiaExpFolderId);
+      activeFolderId = hypoxiaFolderId;
+      csvFileId = await getOrCreateCSV(activeFolderId, 'date,treatment_id,status,observations');
+      setUploadStatus('', '');
+    } catch(e) {
+      setUploadStatus('error', 'Drive error: ' + e.message);
+    }
+  }
+
+  // ── LOOP FIELD VISIBILITY ─────────────────────────────────────────────────
+  function setLoopFieldsVisibility() {
+    document.getElementById('field-tagid-group').style.display = (experimentType === 'field') ? 'block' : 'none';
+    document.getElementById('basket-tag-group').style.display = (experimentType === 'baskets') ? 'grid' : 'none';
+  }
+
+  function resetLoopState() {
+    loopCount = 0;
+    currentPhotoBlob = null;
+    csvRows = [];
+    document.getElementById('log-list').innerHTML = '';
+    document.getElementById('log-card').style.display = 'none';
+    resetEntryFields();
   }
 
   // ── PHOTO LOOP ────────────────────────────────────────────────────────────
@@ -483,86 +670,159 @@
       preview.style.display = 'block';
       document.getElementById('photo-placeholder').style.display = 'none';
       document.getElementById('photo-btn-label').textContent = 'Retake photo';
-      // Auto-focus tag ID field after photo taken
+      // Auto-focus the first relevant field after photo taken
       setTimeout(() => {
-        const tagField = document.getElementById('tag-id');
-        tagField.focus();
-        tagField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        let field;
+        if (experimentType === 'field') field = document.getElementById('tag-id');
+        else if (experimentType === 'baskets') field = document.getElementById('tag-number');
+        else field = document.getElementById('status-select');
+        if (field) {
+          field.focus();
+          field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }, 300);
     };
     reader.readAsDataURL(file);
   }
 
   async function saveEntry() {
-    const tagId = document.getElementById('tag-id').value.trim();
     const status = document.getElementById('status-select').value;
     const observations = document.getElementById('observations').value.trim().replace(/,/g, ';');
 
     if (!currentPhotoBlob) { setUploadStatus('error', 'Please take a photo first.'); return; }
-    if (!tagId) { setUploadStatus('error', 'Please enter a Tag ID.'); return; }
     if (!status) { setUploadStatus('error', 'Please select alive or dead.'); return; }
-    if (!treatmentFolderId) { setUploadStatus('error', 'Drive folder not ready yet — wait a moment.'); return; }
+    if (!activeFolderId) { setUploadStatus('error', 'Drive folder not ready yet — wait a moment.'); return; }
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    let filename, row;
+
+    if (experimentType === 'field') {
+      const tagId = document.getElementById('tag-id').value.trim();
+      if (!tagId) { setUploadStatus('error', 'Please enter a Tag ID.'); return; }
+      filename = tagId + '.jpg';
+      // date, site, stage, treatment, ploidy, replicate, tag_id, status, observations
+      row = [dateStr, siteName, stageName, treatment, ploidy, replicate, tagId, status, observations].join(',');
+    } else if (experimentType === 'baskets') {
+      const tagNumber = document.getElementById('tag-number').value.trim();
+      const tagColor = document.getElementById('tag-color').value.trim();
+      if (!tagNumber) { setUploadStatus('error', 'Please enter a tag number.'); return; }
+      if (!tagColor) { setUploadStatus('error', 'Please enter a tag color.'); return; }
+      const safeColor = tagColor.replace(/[^a-zA-Z0-9]/g, '');
+      filename = tagNumber + '_' + safeColor + '.jpg';
+      // date, basket, tag_number, tag_color, status, observations
+      row = [dateStr, basketNumber, tagNumber, tagColor.replace(/,/g, ';'), status, observations].join(',');
+    } else {
+      // hypoxia: no tag, sequential image numbering
+      const seq = String(loopCount + 1).padStart(3, '0');
+      filename = hypoxiaTreatmentId + '_img' + seq + '.jpg';
+      // date, treatment_id, status, observations
+      row = [dateStr, hypoxiaTreatmentId, status, observations].join(',');
+    }
 
     setUploadStatus('spinner', 'Saving to Drive…');
     try {
-      const dateStr = new Date().toISOString().split('T')[0];
-      await uploadImage(currentPhotoBlob, tagId + '.jpg', treatmentFolderId);
-      // order: date, site, stage, treatment, ploidy, replicate, tag_id, status, observations
-      const row = [dateStr, siteName, stageName, treatment, ploidy, replicate, tagId, status, observations].join(',');
+      await uploadImage(currentPhotoBlob, filename, activeFolderId);
       csvRows.push(row);
       await updateCSV();
-      addToLog(tagId, status);
+      addToLog(filename, status);
       loopCount++;
       totalOystersSession++;
-      if (loopCount >= 50) { finishTreatment(); return; }
+      if (loopCount >= 50) { finishGroup(); return; }
       updateLoopUI();
       resetEntryFields();
-      setUploadStatus('success', 'Saved: ' + tagId + '.jpg');
+      setUploadStatus('success', 'Saved: ' + filename);
       setTimeout(() => setUploadStatus('', ''), 2500);
     } catch(e) {
       setUploadStatus('error', 'Save failed: ' + e.message);
     }
   }
 
-  function finishTreatment() {
-    treatmentsCompleted++;
-    const treatmentFolderName = treatment + '_' + ploidy + '_' + replicate;
-    document.getElementById('between-label').textContent = siteName + ' · ' + stageName;
-    document.getElementById('between-summary').textContent =
-      loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for ' + treatmentFolderName + '.';
+  // ── GROUP COMPLETE / NEXT GROUP / END SESSION ────────────────────────────
+  function finishGroup() {
+    groupsCompleted++;
+    let label, summary, nextLabel;
+
+    if (experimentType === 'field') {
+      const treatmentFolderName = treatment + '_' + ploidy + '_' + replicate;
+      label = siteName + ' · ' + stageName;
+      summary = loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for ' + treatmentFolderName + '.';
+      nextLabel = 'Start next treatment';
+    } else if (experimentType === 'baskets') {
+      label = 'Previous Experiment Baskets';
+      summary = loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for Basket ' + basketNumber + '.';
+      nextLabel = 'Start next basket';
+    } else {
+      label = 'Hypoxia 2025';
+      summary = loopCount + ' photo' + (loopCount !== 1 ? 's' : '') + ' logged for treatment ' + hypoxiaTreatmentId + '.';
+      nextLabel = 'Start next treatment';
+    }
+
+    document.getElementById('between-label').textContent = label;
+    document.getElementById('between-summary').textContent = summary;
+    document.getElementById('next-group-btn').textContent = nextLabel;
     showScreen('screen-between');
   }
 
-  function nextTreatment() {
-    // reset treatment selections
-    treatment = ''; ploidy = ''; replicate = '';
-    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
-    showScreen('screen-treatment');
+  function nextGroup() {
+    if (experimentType === 'field') {
+      treatment = ''; ploidy = ''; replicate = '';
+      document.querySelectorAll('#screen-treatment .seg-btn').forEach(b => b.classList.remove('selected'));
+      showScreen('screen-treatment');
+    } else if (experimentType === 'baskets') {
+      document.getElementById('basket-number').value = '';
+      showScreen('screen-basket-setup');
+    } else {
+      document.getElementById('hypoxia-treatment-id').value = '';
+      showScreen('screen-hypoxia-setup');
+    }
   }
 
   function endFullSession() {
-    const treatmentFolderName = treatment && ploidy && replicate ? treatment + '_' + ploidy + '_' + replicate : '—';
-    document.getElementById('done-summary').textContent =
-      totalOystersSession + ' oyster' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
-      treatmentsCompleted + ' treatment' + (treatmentsCompleted !== 1 ? 's' : '') + '.';
-    document.getElementById('done-path').textContent = 'Oysters / ' + siteName + ' / ' + stageName;
-    document.getElementById('drive-link').href = stageFolderId
-      ? 'https://drive.google.com/drive/folders/' + stageFolderId
+    let summary, pathText, linkFolderId;
+
+    if (experimentType === 'field') {
+      summary = totalOystersSession + ' oyster' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
+        groupsCompleted + ' treatment' + (groupsCompleted !== 1 ? 's' : '') + '.';
+      pathText = 'Oysters / ' + (siteName || '—') + ' / ' + (stageName || '—');
+      linkFolderId = stageFolderId;
+    } else if (experimentType === 'baskets') {
+      summary = totalOystersSession + ' oyster' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
+        groupsCompleted + ' basket' + (groupsCompleted !== 1 ? 's' : '') + '.';
+      pathText = 'Oysters / Previous_Experiment_Baskets';
+      linkFolderId = previousExpFolderId;
+    } else {
+      summary = totalOystersSession + ' photo' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
+        groupsCompleted + ' treatment' + (groupsCompleted !== 1 ? 's' : '') + '.';
+      pathText = 'Oysters / Hypoxia_2025';
+      linkFolderId = hypoxiaExpFolderId;
+    }
+
+    document.getElementById('done-summary').textContent = summary;
+    document.getElementById('done-path').textContent = pathText;
+    document.getElementById('drive-link').href = linkFolderId
+      ? 'https://drive.google.com/drive/folders/' + linkFolderId
       : 'https://drive.google.com/drive/';
     showScreen('screen-done');
   }
 
   function newSession() {
+    experimentType = '';
     siteName = ''; stageName = ''; treatment = ''; ploidy = ''; replicate = '';
-    siteFolderId = ''; stageFolderId = ''; treatmentFolderId = ''; csvFileId = '';
-    csvRows = []; loopCount = 0; totalOystersSession = 0; treatmentsCompleted = 0;
+    siteFolderId = ''; stageFolderId = ''; treatmentFolderId = '';
+    basketNumber = ''; basketFolderId = ''; previousExpFolderId = '';
+    hypoxiaTreatmentId = ''; hypoxiaFolderId = ''; hypoxiaExpFolderId = '';
+    activeFolderId = ''; csvFileId = ''; csvRows = [];
+    loopCount = 0; totalOystersSession = 0; groupsCompleted = 0;
     currentPhotoBlob = null;
+
     document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('stage-select').value = '';
+    document.getElementById('basket-number').value = '';
+    document.getElementById('hypoxia-treatment-id').value = '';
     document.getElementById('log-list').innerHTML = '';
     document.getElementById('log-card').style.display = 'none';
     resetEntryFields();
-    showScreen('screen-setup');
+    showScreen('screen-experiment');
   }
 
   // ── DRIVE HELPERS ─────────────────────────────────────────────────────────
@@ -588,7 +848,7 @@
     return created.id;
   }
 
-  async function getOrCreateCSV(parentId) {
+  async function getOrCreateCSV(parentId, header) {
     const q = `name='index.csv' and '${parentId}' in parents and trashed=false`;
     const res = await driveRequest(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`, 'GET');
     if (res.files && res.files.length > 0) {
@@ -596,11 +856,11 @@
       const content = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: { 'Authorization': 'Bearer ' + accessToken }
       }).then(r => r.text());
-      csvRows = content.trim() ? content.trim().split('\n') : ['date,site,stage,treatment,ploidy,replicate,tag_id,status,observations'];
+      csvRows = content.trim() ? content.trim().split('\n') : [header];
       return fileId;
     }
-    const header = 'date,site,stage,treatment,ploidy,replicate,tag_id,status,observations\n';
-    const blob = new Blob([header], { type: 'text/csv' });
+    const headerLine = header + '\n';
+    const blob = new Blob([headerLine], { type: 'text/csv' });
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify({ name: 'index.csv', parents: [parentId] })], { type: 'application/json' }));
     form.append('file', blob);
@@ -608,7 +868,7 @@
       method: 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form
     });
     const data = await r.json();
-    csvRows = ['date,site,stage,treatment,ploidy,replicate,tag_id,status,observations'];
+    csvRows = [header];
     return data.id;
   }
 
@@ -638,7 +898,9 @@
   }
 
   function resetEntryFields() {
-    document.getElementById('tag-id').value = '';
+    const tagId = document.getElementById('tag-id'); if (tagId) tagId.value = '';
+    const tagNumber = document.getElementById('tag-number'); if (tagNumber) tagNumber.value = '';
+    const tagColor = document.getElementById('tag-color'); if (tagColor) tagColor.value = '';
     document.getElementById('status-select').value = '';
     document.getElementById('observations').value = '';
     document.getElementById('status-preview').textContent = '';
@@ -650,12 +912,12 @@
     document.getElementById('photo-input').value = '';
   }
 
-  function addToLog(tagId, status) {
+  function addToLog(filename, status) {
     document.getElementById('log-card').style.display = 'block';
     const logList = document.getElementById('log-list');
     const entry = document.createElement('div');
     entry.className = 'log-entry';
-    entry.innerHTML = `<span style="font-family:monospace;">${tagId}.jpg</span><span class="status-badge ${status === 'alive' ? 'badge-alive' : 'badge-dead'}">${status}</span>`;
+    entry.innerHTML = `<span style="font-family:monospace;">${filename}</span><span class="status-badge ${status === 'alive' ? 'badge-alive' : 'badge-dead'}">${status}</span>`;
     logList.insertBefore(entry, logList.firstChild);
   }
 

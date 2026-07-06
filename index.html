@@ -177,6 +177,10 @@
       <button class="btn" onclick="chooseExperiment('hypoxia')" style="text-align:left;">Hypoxia Experiment 2025</button>
       <div class="btn-sub">Group by treatment ID; oysters are untagged — status &amp; observations only.</div>
     </div>
+    <div>
+      <button class="btn" onclick="chooseExperiment('hypoxia2026')" style="text-align:left;">Hypoxia Experiment 2026</button>
+      <div class="btn-sub">Stage → treatment/ploidy/rep; measures shell length, wet weight, and RNA sample number.</div>
+    </div>
   </div>
 </div>
 
@@ -284,7 +288,69 @@
   </div>
 </div>
 
-<!-- SCREEN 7: PHOTO LOOP -->
+<!-- SCREEN 7: HYPOXIA 2026 STAGE SETUP -->
+<div class="screen" id="screen-h2026-setup">
+  <div class="app-header">
+    <span class="app-title">Hypoxia Experiment 2026</span>
+    <span class="app-sub">Stage</span>
+  </div>
+  <div class="card section-gap">
+    <div>
+      <div class="field-label">Stage</div>
+      <select id="h2026-stage-select">
+        <option value="">— select stage —</option>
+        <option value="prime_24h">prime_24h</option>
+        <option value="recovery_end">recovery_end</option>
+        <option value="secondary_24h">secondary_24h</option>
+        <option value="secondary_7d">secondary_7d</option>
+        <option value="secondary_end">secondary_end</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="confirmH2026Stage()">Continue to treatments</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+    <div id="h2026-stage-error" style="display:none;" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- SCREEN 8: HYPOXIA 2026 TREATMENT SELECTION -->
+<div class="screen" id="screen-h2026-treatment">
+  <div class="app-header">
+    <span class="app-title" id="h2026-treat-label"></span>
+    <span class="app-sub">New treatment</span>
+  </div>
+  <div class="card section-gap">
+    <div class="context-bar" id="h2026-context-bar"></div>
+    <hr class="divider">
+    <div>
+      <div class="field-label">Treatment</div>
+      <div class="seg-group" id="h2026-treatment-group">
+        <button class="seg-btn" onclick="selectH2026Treatment('Hp', this)">prime</button>
+        <button class="seg-btn" onclick="selectH2026Treatment('Hnp', this)">no prime</button>
+        <button class="seg-btn" onclick="selectH2026Treatment('Hc', this)">control</button>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">Ploidy</div>
+      <div class="seg-group" id="h2026-ploidy-group">
+        <button class="seg-btn" onclick="selectH2026Ploidy('2N', this)">2N</button>
+        <button class="seg-btn" onclick="selectH2026Ploidy('3N', this)">3N</button>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">Replicate</div>
+      <div class="seg-group" id="h2026-rep-group">
+        <button class="seg-btn" onclick="selectH2026Rep('1', this)">1</button>
+        <button class="seg-btn" onclick="selectH2026Rep('2', this)">2</button>
+        <button class="seg-btn" onclick="selectH2026Rep('3', this)">3</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startH2026Treatment()">Start photographing</button>
+    <button class="btn btn-danger" onclick="endFullSession()">End session</button>
+    <div id="h2026-treatment-error" style="display:none;" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- SCREEN 9: PHOTO LOOP -->
 <div class="screen" id="screen-loop">
   <div class="app-header">
     <span class="app-title" id="loop-label"></span>
@@ -346,9 +412,36 @@
       </div>
     </div>
 
-    <div>
+    <!-- Observations: field/baskets/hypoxia2025 single box -->
+    <div id="observations-group">
       <div class="field-label">Observations <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px; color:#bbb;">(optional)</span></div>
       <textarea id="observations" placeholder="e.g. shell gaping, biofouling, partial mortality…"></textarea>
+    </div>
+
+    <!-- Hypoxia 2026 extra fields -->
+    <div id="h2026-fields" style="display:none; flex-direction:column; gap:14px;">
+      <div>
+        <div class="field-label">Sample number</div>
+        <input type="text" id="h2026-sample-no" placeholder="e.g. 001" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="row-2">
+        <div>
+          <div class="field-label">Shell length (mm)</div>
+          <input type="text" id="h2026-shelllen" placeholder="e.g. 42.5" inputmode="decimal" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <div class="field-label">Wet weight (g)</div>
+          <input type="text" id="h2026-wetweight" placeholder="e.g. 8.3" inputmode="decimal" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Outside observations <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px; color:#bbb;">(optional)</span></div>
+        <textarea id="h2026-outside-obs" placeholder="e.g. shell condition, biofouling…"></textarea>
+      </div>
+      <div>
+        <div class="field-label">Inside observations <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px; color:#bbb;">(optional)</span></div>
+        <textarea id="h2026-inside-obs" placeholder="e.g. tissue colour, gonad condition…"></textarea>
+      </div>
     </div>
 
     <div id="upload-status"></div>
@@ -363,7 +456,7 @@
   </div>
 </div>
 
-<!-- SCREEN 8: BETWEEN GROUPS -->
+<!-- SCREEN 10: BETWEEN GROUPS -->
 <div class="screen" id="screen-between">
   <div class="app-header">
     <span class="app-title" id="between-label"></span>
@@ -377,7 +470,7 @@
   </div>
 </div>
 
-<!-- SCREEN 9: SESSION DONE -->
+<!-- SCREEN 11: SESSION DONE -->
 <div class="screen" id="screen-done">
   <div class="app-header">
     <span class="app-title">Session complete</span>
@@ -430,6 +523,15 @@
   let hypoxiaFolderId = '';
   let hypoxiaExpFolderId = '';
 
+  // ── Hypoxia Experiment 2026 ──
+  let h2026Stage = '';
+  let h2026Treatment = '';
+  let h2026Ploidy = '';
+  let h2026Rep = '';
+  let h2026StageFolderId = '';
+  let h2026TreatmentFolderId = '';
+  let h2026ExpFolderId = '';
+
   // ── Shared loop state ──
   let csvFileId = '';
   let csvRows = [];
@@ -479,8 +581,10 @@
       showScreen('screen-setup');
     } else if (type === 'baskets') {
       showScreen('screen-basket-setup');
-    } else {
+    } else if (type === 'hypoxia') {
       showScreen('screen-hypoxia-setup');
+    } else {
+      showScreen('screen-h2026-setup');
     }
   }
 
@@ -643,10 +747,90 @@
     }
   }
 
+  // ── HYPOXIA 2026 ─────────────────────────────────────────────────────────
+  function confirmH2026Stage() {
+    h2026Stage = document.getElementById('h2026-stage-select').value;
+    if (!h2026Stage) { showError('h2026-stage-error', 'Please select a stage.'); return; }
+    document.getElementById('h2026-stage-error').style.display = 'none';
+    document.getElementById('h2026-treat-label').textContent = 'Hypoxia 2026 · ' + h2026Stage;
+    renderContextBar('h2026-context-bar', [{ label: h2026Stage, cls: 'badge-stage' }]);
+
+    // Pre-create stage folder in background
+    (async () => {
+      try {
+        await ensureOystersFolder();
+        h2026ExpFolderId = await getOrCreateFolder('Hypoxia_2026', oystersFolderId);
+        h2026StageFolderId = await getOrCreateFolder(h2026Stage, h2026ExpFolderId);
+      } catch(e) { console.error('Drive setup error:', e); }
+    })();
+
+    showScreen('screen-h2026-treatment');
+  }
+
+  function selectH2026Treatment(val, btn) {
+    h2026Treatment = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function selectH2026Ploidy(val, btn) {
+    h2026Ploidy = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function selectH2026Rep(val, btn) {
+    h2026Rep = val;
+    btn.closest('.seg-group').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  async function startH2026Treatment() {
+    if (!h2026Treatment) { showError('h2026-treatment-error', 'Please select a treatment.'); return; }
+    if (!h2026Ploidy) { showError('h2026-treatment-error', 'Please select a ploidy.'); return; }
+    if (!h2026Rep) { showError('h2026-treatment-error', 'Please select a replicate.'); return; }
+    document.getElementById('h2026-treatment-error').style.display = 'none';
+
+    resetLoopState();
+
+    const folderName = h2026Treatment + '_' + h2026Ploidy + '_' + h2026Rep;
+    document.getElementById('loop-label').textContent = 'Hypoxia 2026 · ' + h2026Stage + ' · ' + folderName;
+    renderContextBar('loop-context-bar', [
+      { label: h2026Stage, cls: 'badge-stage' },
+      { label: folderName, cls: 'badge-info' }
+    ]);
+    setLoopFieldsVisibility();
+    document.getElementById('save-btn-label').textContent = 'Save & next oyster';
+    document.getElementById('finish-group-btn').textContent = 'Done with this treatment';
+    document.getElementById('log-card').querySelector('.field-label').textContent = 'Saved this treatment';
+    updateLoopUI();
+    showScreen('screen-loop');
+
+    setUploadStatus('spinner', 'Setting up treatment folder…');
+    try {
+      if (!h2026StageFolderId) {
+        await ensureOystersFolder();
+        h2026ExpFolderId = await getOrCreateFolder('Hypoxia_2026', oystersFolderId);
+        h2026StageFolderId = await getOrCreateFolder(h2026Stage, h2026ExpFolderId);
+      }
+      h2026TreatmentFolderId = await getOrCreateFolder(folderName, h2026StageFolderId);
+      activeFolderId = h2026TreatmentFolderId;
+      csvFileId = await getOrCreateCSV(activeFolderId, 'date,stage,treatment,ploidy,replicate,sample_no,shelllen_measured_mm,wetweight_g,outside_observations,inside_observations');
+      setUploadStatus('', '');
+    } catch(e) {
+      setUploadStatus('error', 'Drive error: ' + e.message);
+    }
+  }
+
   // ── LOOP FIELD VISIBILITY ─────────────────────────────────────────────────
   function setLoopFieldsVisibility() {
+    const isH2026 = experimentType === 'hypoxia2026';
     document.getElementById('field-tagid-group').style.display = (experimentType === 'field') ? 'block' : 'none';
     document.getElementById('basket-tag-group').style.display = (experimentType === 'baskets') ? 'grid' : 'none';
+    // status row: hidden for h2026
+    document.querySelector('.row-2').style.display = isH2026 ? 'none' : 'grid';
+    document.getElementById('observations-group').style.display = isH2026 ? 'none' : 'block';
+    document.getElementById('h2026-fields').style.display = isH2026 ? 'flex' : 'none';
   }
 
   function resetLoopState() {
@@ -675,6 +859,7 @@
         let field;
         if (experimentType === 'field') field = document.getElementById('tag-id');
         else if (experimentType === 'baskets') field = document.getElementById('tag-number');
+        else if (experimentType === 'hypoxia2026') field = document.getElementById('h2026-sample-no');
         else field = document.getElementById('status-select');
         if (field) {
           field.focus();
@@ -690,13 +875,25 @@
     const observations = document.getElementById('observations').value.trim().replace(/,/g, ';');
 
     if (!currentPhotoBlob) { setUploadStatus('error', 'Please take a photo first.'); return; }
-    if (!status) { setUploadStatus('error', 'Please select alive or dead.'); return; }
+    if (experimentType !== 'hypoxia2026' && !status) { setUploadStatus('error', 'Please select alive or dead.'); return; }
     if (!activeFolderId) { setUploadStatus('error', 'Drive folder not ready yet — wait a moment.'); return; }
 
     const dateStr = new Date().toISOString().split('T')[0];
     let filename, row;
 
-    if (experimentType === 'field') {
+    if (experimentType === 'hypoxia2026') {
+      const sampleNo = document.getElementById('h2026-sample-no').value.trim();
+      const shellLen = document.getElementById('h2026-shelllen').value.trim();
+      const wetWeight = document.getElementById('h2026-wetweight').value.trim();
+      const outsideObs = document.getElementById('h2026-outside-obs').value.trim().replace(/,/g, ';');
+      const insideObs = document.getElementById('h2026-inside-obs').value.trim().replace(/,/g, ';');
+      if (!sampleNo) { setUploadStatus('error', 'Please enter a sample number.'); return; }
+      if (!shellLen) { setUploadStatus('error', 'Please enter a shell length.'); return; }
+      if (!wetWeight) { setUploadStatus('error', 'Please enter a wet weight.'); return; }
+      filename = sampleNo + '.jpg';
+      // date, stage, treatment, ploidy, replicate, sample_no, shelllen_measured_mm, wetweight_g, outside_observations, inside_observations
+      row = [dateStr, h2026Stage, h2026Treatment, h2026Ploidy, h2026Rep, sampleNo, shellLen, wetWeight, outsideObs, insideObs].join(',');
+    } else if (experimentType === 'field') {
       const tagId = document.getElementById('tag-id').value.trim();
       if (!tagId) { setUploadStatus('error', 'Please enter a Tag ID.'); return; }
       filename = tagId + '.jpg';
@@ -751,9 +948,14 @@
       label = 'Previous Experiment Baskets';
       summary = loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for Basket ' + basketNumber + '.';
       nextLabel = 'Start next basket';
-    } else {
+    } else if (experimentType === 'hypoxia') {
       label = 'Hypoxia 2025';
       summary = loopCount + ' photo' + (loopCount !== 1 ? 's' : '') + ' logged for treatment ' + hypoxiaTreatmentId + '.';
+      nextLabel = 'Start next treatment';
+    } else {
+      const folderName = h2026Treatment + '_' + h2026Ploidy + '_' + h2026Rep;
+      label = 'Hypoxia 2026 · ' + h2026Stage;
+      summary = loopCount + ' oyster' + (loopCount !== 1 ? 's' : '') + ' logged for ' + folderName + '.';
       nextLabel = 'Start next treatment';
     }
 
@@ -771,9 +973,15 @@
     } else if (experimentType === 'baskets') {
       document.getElementById('basket-number').value = '';
       showScreen('screen-basket-setup');
-    } else {
+    } else if (experimentType === 'hypoxia') {
       document.getElementById('hypoxia-treatment-id').value = '';
       showScreen('screen-hypoxia-setup');
+    } else {
+      // h2026: stage stays fixed, reset treatment selectors only
+      h2026Treatment = ''; h2026Ploidy = ''; h2026Rep = '';
+      document.querySelectorAll('#h2026-treatment-group .seg-btn, #h2026-ploidy-group .seg-btn, #h2026-rep-group .seg-btn')
+        .forEach(b => b.classList.remove('selected'));
+      showScreen('screen-h2026-treatment');
     }
   }
 
@@ -790,11 +998,16 @@
         groupsCompleted + ' basket' + (groupsCompleted !== 1 ? 's' : '') + '.';
       pathText = 'Oysters / Previous_Experiment_Baskets';
       linkFolderId = previousExpFolderId;
-    } else {
+    } else if (experimentType === 'hypoxia') {
       summary = totalOystersSession + ' photo' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
         groupsCompleted + ' treatment' + (groupsCompleted !== 1 ? 's' : '') + '.';
       pathText = 'Oysters / Hypoxia_2025';
       linkFolderId = hypoxiaExpFolderId;
+    } else {
+      summary = totalOystersSession + ' oyster' + (totalOystersSession !== 1 ? 's' : '') + ' logged across ' +
+        groupsCompleted + ' treatment' + (groupsCompleted !== 1 ? 's' : '') + '.';
+      pathText = 'Oysters / Hypoxia_2026 / ' + (h2026Stage || '—');
+      linkFolderId = h2026StageFolderId;
     }
 
     document.getElementById('done-summary').textContent = summary;
@@ -811,6 +1024,8 @@
     siteFolderId = ''; stageFolderId = ''; treatmentFolderId = '';
     basketNumber = ''; basketFolderId = ''; previousExpFolderId = '';
     hypoxiaTreatmentId = ''; hypoxiaFolderId = ''; hypoxiaExpFolderId = '';
+    h2026Stage = ''; h2026Treatment = ''; h2026Ploidy = ''; h2026Rep = '';
+    h2026StageFolderId = ''; h2026TreatmentFolderId = ''; h2026ExpFolderId = '';
     activeFolderId = ''; csvFileId = ''; csvRows = [];
     loopCount = 0; totalOystersSession = 0; groupsCompleted = 0;
     currentPhotoBlob = null;
@@ -819,6 +1034,7 @@
     document.getElementById('stage-select').value = '';
     document.getElementById('basket-number').value = '';
     document.getElementById('hypoxia-treatment-id').value = '';
+    document.getElementById('h2026-stage-select').value = '';
     document.getElementById('log-list').innerHTML = '';
     document.getElementById('log-card').style.display = 'none';
     resetEntryFields();
@@ -901,6 +1117,11 @@
     const tagId = document.getElementById('tag-id'); if (tagId) tagId.value = '';
     const tagNumber = document.getElementById('tag-number'); if (tagNumber) tagNumber.value = '';
     const tagColor = document.getElementById('tag-color'); if (tagColor) tagColor.value = '';
+    const sampleNo = document.getElementById('h2026-sample-no'); if (sampleNo) sampleNo.value = '';
+    const shellLen = document.getElementById('h2026-shelllen'); if (shellLen) shellLen.value = '';
+    const wetWeight = document.getElementById('h2026-wetweight'); if (wetWeight) wetWeight.value = '';
+    const outsideObs = document.getElementById('h2026-outside-obs'); if (outsideObs) outsideObs.value = '';
+    const insideObs = document.getElementById('h2026-inside-obs'); if (insideObs) insideObs.value = '';
     document.getElementById('status-select').value = '';
     document.getElementById('observations').value = '';
     document.getElementById('status-preview').textContent = '';

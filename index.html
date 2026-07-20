@@ -426,11 +426,11 @@
       </div>
       <div class="row-2">
         <div>
-          <div class="field-label">Shell length (mm)</div>
+          <div class="field-label">Shell length (mm) <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px; color:#bbb;">(optional)</span></div>
           <input type="text" id="h2026-shelllen" placeholder="e.g. 42.5" inputmode="decimal" autocomplete="off" spellcheck="false">
         </div>
         <div>
-          <div class="field-label">Wet weight (g)</div>
+          <div class="field-label">Wet weight (g) <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px; color:#bbb;">(optional)</span></div>
           <input type="text" id="h2026-wetweight" placeholder="e.g. 8.3" inputmode="decimal" autocomplete="off" spellcheck="false">
         </div>
       </div>
@@ -888,8 +888,6 @@
       const outsideObs = document.getElementById('h2026-outside-obs').value.trim().replace(/,/g, ';');
       const insideObs = document.getElementById('h2026-inside-obs').value.trim().replace(/,/g, ';');
       if (!sampleNo) { setUploadStatus('error', 'Please enter a sample number.'); return; }
-      if (!shellLen) { setUploadStatus('error', 'Please enter a shell length.'); return; }
-      if (!wetWeight) { setUploadStatus('error', 'Please enter a wet weight.'); return; }
       filename = sampleNo + '.jpg';
       // date, stage, treatment, ploidy, replicate, sample_no, shelllen_measured_mm, wetweight_g, outside_observations, inside_observations
       row = [dateStr, h2026Stage, h2026Treatment, h2026Ploidy, h2026Rep, sampleNo, shellLen, wetWeight, outsideObs, insideObs].join(',');
